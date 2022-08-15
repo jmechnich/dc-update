@@ -11,6 +11,12 @@ to pull a newer image. If any service was updated, all services are restarted.
 dc-update service-directory
 ```
 
+For detailed output, you can set the DEBUG variable to `true`:
+
+```sh
+DEBUG=true dc-update service-directory
+```
+
 ### Cron example
 
 The following updates a docker-based `gitea` and `roundcube`
