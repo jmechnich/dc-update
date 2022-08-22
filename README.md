@@ -25,7 +25,7 @@ morning at 2 a.m., obsolete images are removed.
 
 ```sh
 # m h dom mon dow usercommand
-0 1 * * * root /usr/local/bin/update-docker /srv/gitea
-5 1 * * * root /usr/local/bin/update-docker /srv/roundcube
+0 1 * * * root /usr/local/bin/dc-update /srv/gitea
+5 1 * * * root /usr/local/bin/dc-update /srv/roundcube
 0 2 * * 0 root /usr/bin/docker image prune --all --force
 ```
