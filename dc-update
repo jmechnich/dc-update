@@ -2,62 +2,63 @@
 
 DEBUG=${DEBUG:-false}
 
-if [ $# -ne 1 ]; then
-    echo "usage: $(basename $0) directory"
+if [ $# -lt 1 ]; then
+    echo "usage: $(basename $0) DIR [DIR ...]"
     exit 1
 fi
 
-DIR="$1"
-shift
+while [ $# -gt 0 ]; do
+    DIR="$1"
+    shift
 
-if [ ! -d "$DIR" ]; then
-    echo "$DIR is not a directory"
-    exit 1
-fi
-
-$DEBUG && echo "Running in $DIR"
-cd "$DIR"
-
-if ! [ -r docker-compose.yml ]; then
-    echo "docker-compose.yml not found"
-    exit 1
-fi
-
-DORESTART=0
-for SERVICE in $(docker-compose ps --services); do
-    # get container hash
-    CONTAINER=$(docker-compose ps -q $SERVICE)
-    if [ -z $CONTAINER ]; then
-        echo "$PROJ is not running, not updating"
-        exit 0
+    if [ ! -d "$DIR" ]; then
+        echo "$DIR is not a directory, skipping"
+        continue
     fi
+
+    $DEBUG && echo "Running in $DIR"
+    cd "$DIR"
+
+    if ! [ -r docker-compose.yml ]; then
+        echo "docker-compose.yml not found"
+        continue
+    fi
+
+    DORESTART=0
+    for SERVICE in $(docker-compose ps --services); do
+        # get container hash
+        CONTAINER=$(docker-compose ps -q $SERVICE)
+        if [ -z $CONTAINER ]; then
+            echo "$SERVICE is not running, not updating"
+            break
+        fi
     
-    # get image name and tag
-    IMAGE=$(docker inspect $CONTAINER | jq -r '.[].Config.Image')
+        # get image name and tag
+        IMAGE=$(docker inspect $CONTAINER | jq -r '.[].Config.Image')
 
-    # update image from 
-    $DEBUG && echo "Trying to pull $IMAGE for $SERVICE"
-    docker-compose pull -q "$SERVICE"
+        $DEBUG && echo "Trying to pull $IMAGE for $SERVICE"
+        docker-compose pull -q "$SERVICE"
 
-    HASHLATEST=$(docker images --no-trunc --format '{{.ID}}' "$IMAGE")
-    HASHCURRENT=$(docker inspect $CONTAINER | jq -r '.[0].Image')
+        HASHLATEST=$(docker images --no-trunc --format '{{.ID}}' "$IMAGE")
+        HASHCURRENT=$(docker inspect $CONTAINER | jq -r '.[0].Image')
 
-    if [ "$HASHLATEST" != "$HASHCURRENT" ]; then
-        if $DEBUG; then
-            echo "Found update for $IMAGE:"
-            echo "  CURRENT $HASHCURRENT"
-            echo "  LATEST  $HASHLATEST"
-        fi        
-        DORESTART=1
-    else
-        $DEBUG && echo "No update for $IMAGE"
+        if [ "$HASHLATEST" != "$HASHCURRENT" ]; then
+            if $DEBUG; then
+                echo "Found update for $IMAGE:"
+                echo "  CURRENT $HASHCURRENT"
+                echo "  LATEST  $HASHLATEST"
+            fi
+            DORESTART=1
+        else
+            $DEBUG && echo "No update for $IMAGE"
+        fi
+    done
+
+    if [ $DORESTART -eq 1 ]; then
+        $DEBUG && echo "Recreating containers"
+        docker-compose --no-ansi down
+        docker-compose --no-ansi up -d --no-color
     fi
 done
-
-if [ $DORESTART -eq 1 ]; then
-    $DEBUG && echo "Recreating containers"
-    docker-compose --no-ansi down
-    docker-compose --no-ansi up -d --no-color
-fi
 
 exit 0
