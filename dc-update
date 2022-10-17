@@ -39,7 +39,7 @@ while [ $# -gt 0 ]; do
         $DEBUG && echo "Trying to pull $IMAGE for $SERVICE"
         docker-compose pull -q "$SERVICE"
 
-        HASHLATEST=$(docker images --no-trunc --format '{{.ID}}' "$IMAGE")
+        HASHLATEST=$(docker images --no-trunc --format '{{.ID}}' "$IMAGE" | head -1)
         HASHCURRENT=$(docker inspect $CONTAINER | jq -r '.[0].Image')
 
         if [ "$HASHLATEST" != "$HASHCURRENT" ]; then
