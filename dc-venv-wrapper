@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# this script uses a python venv in order to install an up-to-date version of docker-compose
+# and run it within dc-update
+
+SCRIPTDIR=`cd $(dirname $0); pwd`
+
+if [ ! -e "$SCRIPTDIR"/.venv/activate ]; then
+    (cd "$SCRIPTDIR" && python3 -m venv .venv)
+fi
+
+. "$SCRIPTDIR"/.venv/bin/activate
+
+if [ ! -x "$SCRIPTDIR"/.venv/bin/docker-compose ]; then
+    python3 -m pip install -U pip
+    python3 -m pip install docker-compose
+fi
+
+dc-update $@ 2>&1 | grep -vi 'DeprecationWarning\|cryptography.hazmat.backends'
