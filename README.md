@@ -19,13 +19,12 @@ DEBUG=true dc-update service-directory
 
 ### Cron example
 
-The following updates a docker-based `gitea` and `roundcube`
-installation every night at 1:00 and 1:05, respectively. Every Sunday
-morning at 2 a.m., obsolete images are removed.
+The following updates docker-based installations of `gitea` and
+`roundcube` every night at 2:00, consecutively. Every Sunday morning
+at 1:00, obsolete images are removed.
 
 ```sh
 # m h dom mon dow usercommand
-0 1 * * * root /usr/local/bin/dc-update /srv/gitea
-5 1 * * * root /usr/local/bin/dc-update /srv/roundcube
-0 2 * * 0 root /usr/bin/docker image prune --all --force
+0 2 * * * root /usr/local/bin/dc-update /srv/gitea /srv/roundcube
+0 1 * * 0 root /usr/bin/docker image prune --all --force
 ```
