@@ -39,7 +39,15 @@ while [ $# -gt 0 ]; do
         $DEBUG && echo "Trying to pull $IMAGE for $SERVICE"
         docker-compose pull -q "$SERVICE"
 
+	# remove docker.io prefix from image name
+	IMAGE="${IMAGE#docker.io/}"
+
         HASHLATEST=$(docker images --no-trunc --format '{{.ID}}' "$IMAGE" | head -1)
+        if [ x"$HASHLATEST" = x ]; then
+            echo "Error looking up latest image hash for '$IMAGE' in service '$SERVICE'"
+            break
+        fi
+
         HASHCURRENT=$(docker inspect $CONTAINER | jq -r '.[0].Image')
 
         if [ "$HASHLATEST" != "$HASHCURRENT" ]; then
