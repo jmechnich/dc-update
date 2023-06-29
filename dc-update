@@ -64,8 +64,8 @@ while [ $# -gt 0 ]; do
 
     if [ $DORESTART -eq 1 ]; then
         $DEBUG && echo "Recreating containers"
-        docker-compose --no-ansi down
-        docker-compose --no-ansi up -d --no-color
+        docker-compose --ansi=never down
+        docker-compose --ansi=never up -d --no-color
     fi
 done
 
