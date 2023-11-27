@@ -1,6 +1,7 @@
 #!/bin/sh
 
 DEBUG=${DEBUG:-false}
+COMPOSEFILENAME=${COMPOSEFILENAME:-"docker-compose.yml docker-compose.yaml compose.yml compose.yaml"}
 
 if [ $# -lt 1 ]; then
     echo "usage: $(basename $0) DIR [DIR ...]"
@@ -19,8 +20,17 @@ while [ $# -gt 0 ]; do
     $DEBUG && echo "Running in $DIR"
     cd "$DIR"
 
-    if ! [ -r docker-compose.yml ]; then
-        echo "docker-compose.yml not found"
+    COMPOSEFILEFOUND=0
+    for f in $COMPOSEFILENAME; do
+        $DEBUG && echo "Checking for $f"
+        if [ -r $f ]; then
+            $DEBUG && echo "Found $f"
+            COMPOSEFILEFOUND=1
+            break
+        fi
+    done
+    if [ $COMPOSEFILEFOUND -eq 0 ]; then
+        echo "Compose file not found"
         continue
     fi
 
