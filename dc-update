@@ -42,12 +42,17 @@ while [ $# -gt 0 ]; do
             echo "$SERVICE is not running, not updating"
             break
         fi
-    
+
         # get image name and tag
         IMAGE=$(docker inspect $CONTAINER | jq -r '.[].Config.Image')
-
-        $DEBUG && echo "Trying to pull $IMAGE for $SERVICE"
-        docker-compose pull -q "$SERVICE"
+        IMAGEDIGESTS=$(docker image inspect $IMAGE | jq '.[].RepoDigests | length')
+        if [ $IMAGEDIGESTS -eq 0 ]; then
+            $DEBUG && echo "Trying to build local image $IMAGE for $SERVICE"
+            docker-compose build -q --pull "$SERVICE"
+        else
+            $DEBUG && echo "Trying to pull $IMAGE for $SERVICE"
+            docker-compose pull -q "$SERVICE"
+        fi
 
 	# remove docker.io prefix from image name
 	IMAGE="${IMAGE#docker.io/}"
