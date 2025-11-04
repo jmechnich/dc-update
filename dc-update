@@ -59,6 +59,9 @@ while [ $# -gt 0 ]; do
 	# remove docker.io prefix from image name
 	IMAGE="${IMAGE#docker.io/}"
 
+	# remove library prefix from image name
+	IMAGE="${IMAGE#library/}"
+
         HASHLATEST=$($DOCKER images --no-trunc --format '{{.ID}}' "$IMAGE" | head -1)
         if [ x"$HASHLATEST" = x ]; then
             echo "Error looking up latest image hash for '$IMAGE' in service '$SERVICE'"
