@@ -2,6 +2,8 @@
 
 DEBUG=${DEBUG:-false}
 COMPOSEFILENAME=${COMPOSEFILENAME:-"docker-compose.yml docker-compose.yaml compose.yml compose.yaml"}
+DOCKER=${DOCKER:-docker}
+COMPOSE=${COMPOSE:-docker-compose}
 
 if [ $# -lt 1 ]; then
     echo "usage: $(basename $0) DIR [DIR ...]"
@@ -35,35 +37,35 @@ while [ $# -gt 0 ]; do
     fi
 
     DORESTART=0
-    for SERVICE in $(docker-compose ps --services); do
+    for SERVICE in $($COMPOSE ps --services); do
         # get container hash
-        CONTAINER=$(docker-compose ps -q $SERVICE)
+        CONTAINER=$($COMPOSE ps -q $SERVICE)
         if [ -z $CONTAINER ]; then
             echo "$SERVICE is not running, not updating"
             break
         fi
 
         # get image name and tag
-        IMAGE=$(docker inspect $CONTAINER | jq -r '.[].Config.Image')
-        IMAGEDIGESTS=$(docker image inspect $IMAGE | jq '.[].RepoDigests | length')
+        IMAGE=$($DOCKER inspect $CONTAINER | jq -r '.[].Config.Image')
+        IMAGEDIGESTS=$($DOCKER image inspect $IMAGE | jq '.[].RepoDigests | length')
         if [ $IMAGEDIGESTS -eq 0 ]; then
             $DEBUG && echo "Trying to build local image $IMAGE for $SERVICE"
-            docker-compose build -q --pull "$SERVICE"
+            $COMPOSE build -q --pull "$SERVICE"
         else
             $DEBUG && echo "Trying to pull $IMAGE for $SERVICE"
-            docker-compose pull -q "$SERVICE"
+            $COMPOSE pull -q "$SERVICE"
         fi
 
 	# remove docker.io prefix from image name
 	IMAGE="${IMAGE#docker.io/}"
 
-        HASHLATEST=$(docker images --no-trunc --format '{{.ID}}' "$IMAGE" | head -1)
+        HASHLATEST=$($DOCKER images --no-trunc --format '{{.ID}}' "$IMAGE" | head -1)
         if [ x"$HASHLATEST" = x ]; then
             echo "Error looking up latest image hash for '$IMAGE' in service '$SERVICE'"
             break
         fi
 
-        HASHCURRENT=$(docker inspect $CONTAINER | jq -r '.[0].Image')
+        HASHCURRENT=$($DOCKER inspect $CONTAINER | jq -r '.[0].Image')
 
         if [ "$HASHLATEST" != "$HASHCURRENT" ]; then
             if $DEBUG; then
@@ -79,8 +81,8 @@ while [ $# -gt 0 ]; do
 
     if [ $DORESTART -eq 1 ]; then
         $DEBUG && echo "Recreating containers"
-        docker-compose --ansi=never down
-        docker-compose --ansi=never up -d --no-color
+        $COMPOSE --ansi=never down
+        $COMPOSE --ansi=never up -d --no-color
     fi
 done
 
